@@ -75,5 +75,18 @@ Vagrant.configure("2") do |config|
 #   apt-get update
 #   apt-get install -y apache2
 # SHELL
+
+  config.vm.define "PRI1" do |manager1|
+    manager1.vm.hostname = "PRI1"
+  end
+
+  config.vm.define "sec1" do |worker1|
+    worker1.vm.hostname = "sec1"
+  end
+
+  config.vm.define "sec2" do |worker2|
+    worker2.vm.hostname = "sec2"
+  end
+
   config.vm.provision :shell, :path => 'mongodb.sh'
 end
