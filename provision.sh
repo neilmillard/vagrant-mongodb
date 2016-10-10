@@ -158,7 +158,7 @@ gem_install() {
 # Install the yum dependencies
 install_yum_deps() {
   echo "Installing required yum packages"
-  yum_install augeas-devel ncurses-devel gcc gcc-c++ curl git
+  yum_install augeas-devel ncurses-devel gcc gcc-c++ curl git net-tools
 }
 
 print_version() {
