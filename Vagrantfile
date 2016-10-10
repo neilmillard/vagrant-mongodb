@@ -77,6 +77,45 @@ Vagrant.configure("2") do |config|
 #   apt-get install -y apache2
 # SHELL
 
+  # Required Environment Variables
+  if ENV['init_role']
+    $init_role = ENV['init_role']
+  else
+    puts "Environment variable: 'init_role' is not set, defaulting to 'mongodb'"
+    $init_role = 'mongodb'
+  end
+
+  if ENV['init_env']
+    $init_env = ENV['init_env']
+  else
+    puts "Environment variable: 'init_env' is not set, defaulting to 'dev'"
+    $init_env = 'dev'
+  end
+
+  # Optional Environment Variables
+  if ENV['init_repouser']
+    $init_repouser = ENV['init_repouser']
+  else
+    puts "Environment variable: 'init_repouser' is not set, defaulting to 'neilmillard'"
+    $init_repouser = 'neilmillard'
+  end
+
+  if ENV['init_reponame']
+    $init_reponame = ENV['init_reponame']
+  else
+    puts "Environment variable: 'init_reponame' is not set, defaulting to 'vagrant-mongodb'"
+    $init_reponame = 'vagrant-mongodb'
+  end
+
+  if ENV['init_repobranch']
+    $init_repobranch = ENV['init_repobranch']
+  else
+    puts "Environment variable: 'init_repobranch' is not set, defaulting to 'master'"
+    $init_repobranch = 'master'
+  end
+
+  args = "--role #{$init_role} --environment #{$init_env} --repouser #{$init_repouser} --reponame #{$init_reponame} --repobranch #{$init_repobranch}"
+
   config.vm.define "PRI1" do |manager1|
     manager1.vm.hostname = "PRI1"
   end
@@ -89,5 +128,5 @@ Vagrant.configure("2") do |config|
     worker2.vm.hostname = "sec2"
   end
 
-  config.vm.provision :shell, :path => 'mongodb.sh'
+  config.vm.provision :shell, :path => 'provision.sh', :args => args
 end
