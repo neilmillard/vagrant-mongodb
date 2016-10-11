@@ -6,7 +6,7 @@ class profile::mongodb_repl_set_wt {
     $num_instances        = hiera('profile::mongodb_replset::num_instances', '2')
     $db_path              = hiera('mongodb::server::dbpath')
     $tls_pki_path         = hiera('profile::mongodb_replset::pki_path', '/etc/pki/mongodb')
-    $tls_chl_pass         = hiera('ife_toolbelt::challenge_password')
+    $tls_chl_pass         = hiera('ife_toolbelt::challenge_password','chanGEm3')
     $ssl_mode             = hiera('profile::mongodb::sslmode', 'preferSSL')
     $db_auth              = hiera('profile::mongodb::auth', false)
     # skydns config
