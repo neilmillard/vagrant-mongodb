@@ -27,9 +27,9 @@ class profile::mongodb_repl_set_wt {
       group   => root,
       content => template('profile/mongodb/mongodb_replset_wt.sh.erb'),
       require => [
-        Class['::mountdevice'],
-        Class['profile::skydns_client'],
-        File[$tls_pki_path],
+        #Class['::mountdevice'],
+        #Class['profile::skydns_client'],
+        #File[$tls_pki_path],
         Class['mongodb::server']
       ],
     }
