@@ -117,15 +117,15 @@ Vagrant.configure("2") do |config|
   args = "--role #{$init_role} --environment #{$init_env} --repouser #{$init_repouser} --reponame #{$init_reponame} --repobranch #{$init_repobranch}"
 
   config.vm.define "PRI1" do |manager1|
-    manager1.vm.hostname = "PRI1"
+    manager1.vm.hostname = "x1.mongodb.internal"
   end
 
   config.vm.define "sec1" do |worker1|
-    worker1.vm.hostname = "sec1"
+    worker1.vm.hostname = "x2.mongodb.internal"
   end
 
   config.vm.define "sec2" do |worker2|
-    worker2.vm.hostname = "sec2"
+    worker2.vm.hostname = "x3.mongodb.internal"
   end
 
   config.vm.provision :shell, :path => 'provision.sh', :args => args

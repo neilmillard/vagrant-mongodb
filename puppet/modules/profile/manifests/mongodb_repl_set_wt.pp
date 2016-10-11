@@ -3,6 +3,7 @@ class profile::mongodb_repl_set_wt {
 
     $repl_domain          = hiera('profile::mongodb_replset::domain')
     $mongodb_replset_name = hiera('profile::mongodb_replset::mongodb_replset_name')
+    $replset_members      = hiera('profile::mongodb_replset::members')
     $num_instances        = hiera('profile::mongodb_replset::num_instances', '2')
     $db_path              = hiera('mongodb::server::dbpath')
     $tls_pki_path         = hiera('profile::mongodb_replset::pki_path', '/etc/pki/mongodb')
@@ -16,7 +17,12 @@ class profile::mongodb_repl_set_wt {
     $record_ttl    = hiera('mongodb::skydns::record_ttl', '360')
 
 
-    package {'nc':
+  mongodb_replset{"${mongodb_replset_name}":
+    members => ${replset_members},
+  }
+
+
+  package {'nc':
       ensure  => installed,
     }
     ->
