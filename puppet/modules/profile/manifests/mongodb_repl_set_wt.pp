@@ -18,7 +18,7 @@ class profile::mongodb_repl_set_wt {
 
 
   mongodb_replset{"${mongodb_replset_name}":
-    members => ${replset_members},
+    members => "${replset_members}"
   }
 
 
