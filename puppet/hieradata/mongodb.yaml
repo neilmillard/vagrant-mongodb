@@ -1,26 +1,26 @@
 ---
 classes:
   - role::mongodb
-mongodb::server::dbpath: '/mnt/mongodb'
-mongodb::server::logpath: '/mnt/mongodb/mongod.log'
+#mongodb::server::dbpath: '/mnt/mongodb'
+#mongodb::server::logpath: '/mnt/mongodb/mongod.log'
 mongodb::globals::version: "3.2.10-1.el7"
-mongodb::server::storage_engine: "wiredTiger"
+#mongodb::server::storage_engine: "wiredTiger"
 mongodb::repo::repo_location: 'https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.2/x86_64/'
 mongodb::globals::manage_package_repo: true
 
-mongodb::domain: "mongodb.internal"
+#mongodb::domain: "mongodb.internal"
 
-mongodb::server::replset: "mongodb"
-mongodb::server::replset_members:
-  - "x1.%{hiera('::mongodb::domain')}:27017"
-  - "x2.%{hiera('::mongodb::domain')}:27017"
-  - "x3.%{hiera('::mongodb::domain')}:27017"
+#mongodb::server::replset: "mongodb"
+#mongodb::server::replset_members:
+#  - "x1.%{hiera('::mongodb::domain')}:27017"
+#  - "x2.%{hiera('::mongodb::domain')}:27017"
+#  - "x3.%{hiera('::mongodb::domain')}:27017"
 
 # cant use syslog and logpath
 #mongodb::server::syslog: true
-mongodb::server::dbpath: "/var/lib/mongo"
-mongodb::server::directoryperdb: true
-mongodb::server::logpath: ""
+#mongodb::server::dbpath: "/var/lib/mongo"
+#mongodb::server::directoryperdb: true
+#mongodb::server::logpath: ""
 mongodb::client::package_name: "mongodb-org-shell"
 
 limits:

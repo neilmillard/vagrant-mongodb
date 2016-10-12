@@ -1,4 +1,4 @@
-mongodb::globals::version: "2.6.1"
+#mongodb::globals::version: "2.6.1"
 mongodb::server::package_name: "mongodb-org-server"
 mongodb::globals::manage_package_repo: true
 mongodb::globals::bind_ip:
