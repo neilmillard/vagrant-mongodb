@@ -10,13 +10,18 @@ class role::mongodb {
     stage => swapfile
   }
 
-  $datapath = hiera('mongodb::server::dbpath','/data/db')
-  $datauser = hiera('mongodb::server::user','mongod')
-  $datagrp  = hiera('mongodb::server::grp','mongod')
-  $serverpkg = hiera('mongodb::server::package_name', 'mongodb-org-server')
+  # from puppetlabs-mongodb/manifests/params.pp
+  $pidfilepath  = '/var/run/mongodb/mongod.pid'
+
+  $datapath     = hiera('mongodb::server::dbpath','/data/db')
+  $datauser     = hiera('mongodb::server::user','mongod')
+  $datagrp      = hiera('mongodb::server::grp','mongod')
+  $serverpkg    = hiera('mongodb::server::package_name', 'mongodb-org-server')
+
   exec { "create_datafolder":
     command => "/usr/bin/mkdir -p ${datapath}",
   }
+
   file {"${datapath}":
     ensure => directory,
     mode   => '0755',
@@ -32,7 +37,8 @@ class role::mongodb {
 
   package { 'mongodb-org-tools': ensure => installed, require => Yumrepo['mongodb'] }
 
-
+     Service['mongodb']
+  -> File[$pidfilepath]
   # Class['profile::mongodb1']
   #-> Class['profile::mongodb_repl_set_wt']
 }
