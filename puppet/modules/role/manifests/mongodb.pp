@@ -37,8 +37,6 @@ class role::mongodb {
 
   package { 'mongodb-org-tools': ensure => installed, require => Yumrepo['mongodb'] }
 
-     Service['mongodb']
-  -> File[$pidfilepath]
   # Class['profile::mongodb1']
   #-> Class['profile::mongodb_repl_set_wt']
 }
