@@ -8,6 +8,8 @@ mongodb::globals::version: "3.2.9-1.el7"
 #mongodb::server::storage_engine: "wiredTiger"
 mongodb::repo::repo_location: 'https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.2/x86_64/'
 mongodb::globals::manage_package_repo: true
+# workaround for https://tickets.puppetlabs.com/browse/MODULES-3956
+mongodb::server::restart: false
 
 #mongodb::domain: "mongodb.internal"
 
