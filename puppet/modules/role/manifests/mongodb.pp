@@ -19,7 +19,7 @@ class role::mongodb {
     mode   => '0755',
     owner => "${datauser}",
     group => "${datagrp}",
-    require => Package["${serverpkg}"],
+    require => Package['mongodb_server'],
     before => Service['mongodb']
   }
 
