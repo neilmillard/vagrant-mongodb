@@ -14,12 +14,15 @@ class role::mongodb {
   $datauser = hiera('mongodb::server::user','mongod')
   $datagrp  = hiera('mongodb::server::grp','mongod')
   $serverpkg = hiera('mongodb::server::package_name', 'mongodb-org-server')
+  exec { "create_datafolder":
+    command => "/usr/bin/mkdir -p ${datapath}",
+  }
   file {"${datapath}":
     ensure => directory,
     mode   => '0755',
     owner => "${datauser}",
     group => "${datagrp}",
-    require => Package['mongodb_server'],
+    require => [Package['mongodb_server'],Exec['create_datafolder']],
     before => Service['mongodb']
   }
 
