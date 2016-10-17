@@ -51,6 +51,7 @@ pathmunge() {
 
 # Parse the commmand line arguments
 parse_args() {
+  DEBUG=""
   while [[ -n "${1}" ]] ; do
     case "${1}" in
       --help|-h)
@@ -86,6 +87,7 @@ parse_args() {
         shift
         ;;
       --debug)
+        export DEBUG=" --debug"
         shift
         ;;
       *)
@@ -330,7 +332,7 @@ run_puppet() {
   export LC_ALL=en_GB.utf8
   echo ""
   echo "Running puppet apply"
-  puppet apply ${puppetdir}/manifests/site.pp --detailed-exitcodes
+  puppet apply ${puppetdir}/manifests/site.pp --detailed-exitcodes ${DEBUG}
 
   PUPPET_EXIT=$?
 
