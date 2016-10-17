@@ -2,5 +2,5 @@
 # role specific
 #mod "puppetlabs/mongodb", "0.14.0"
 mod "MSMFG/mongodb",
-  :git => "git@github.com:MSMFG/puppetlabs-mongodb.git",
+  :git => "https://github.com/MSMFG/puppetlabs-mongodb.git",
   :ref => "2.0.0"
