@@ -14,9 +14,9 @@ mongodb::domain: "mongodb.internal"
 
 mongodb::server::replset: "mongodb"
 mongodb::server::replset_members:
-  - "x1.%{hiera('::mongodb::domain')}:27017":
-  - "x2.%{hiera('::mongodb::domain')}:27017":
-  - "x3.%{hiera('::mongodb::domain')}:27017":
+  - "x1.%{hiera('mongodb::domain')}:27017":
+  - "x2.%{hiera('mongodb::domain')}:27017":
+  - "x3.%{hiera('mongodb::domain')}:27017":
 
 # cant use syslog and logpath
 #mongodb::server::syslog: true
