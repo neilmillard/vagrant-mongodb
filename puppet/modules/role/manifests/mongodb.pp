@@ -1,6 +1,7 @@
 class role::mongodb {
   include ::profile::base
   include ::profile::os_limits
+  include selinux
 
   stage { 'swapfile':
     before => Stage['main'],

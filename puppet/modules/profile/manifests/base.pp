@@ -21,4 +21,8 @@ class profile::base {
     path   => '/etc/logrotate.d/syslog',
     line   => '/var/log/cron'
   }
+
+  class { 'selinux':
+    mode => 'permissive'
+  }
 }
