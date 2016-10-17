@@ -3,9 +3,6 @@ classes:
   - role::mongodb
 #mongodb::server::dbpath: '/mnt/mongodb'
 #mongodb::server::logpath: '/mnt/mongodb/mongod.log'
-
-# 3.2.10-1.el7 checks pidfile presence. this breaks
-mongodb::server::pidfilepath: false
 mongodb::globals::version: "3.2.10-1.el7"
 
 #mongodb::server::storage_engine: "wiredTiger"
