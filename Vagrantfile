@@ -114,7 +114,13 @@ Vagrant.configure("2") do |config|
     $init_repobranch = 'master'
   end
 
-  args = "--role #{$init_role} --environment #{$init_env} --repouser #{$init_repouser} --reponame #{$init_reponame} --repobranch #{$init_repobranch}"
+  if ENV['init_debug']
+    $init_debug = ' --debug'
+  else
+    $init_debug = ''
+  end
+
+  args = "--role #{$init_role} --environment #{$init_env} --repouser #{$init_repouser} --reponame #{$init_reponame} --repobranch #{$init_repobranch} #{$init_debug}"
 
   config.vm.define "PRI1" do |manager1|
     manager1.vm.hostname = "x1.mongodb.internal"
