@@ -4,7 +4,7 @@ classes:
 #mongodb::server::dbpath: '/mnt/mongodb'
 #mongodb::server::logpath: '/mnt/mongodb/mongod.log'
 mongodb::globals::version: "3.2.10-1.el7"
-
+mongodb::server::createpidfile: false
 mongodb::server::storage_engine: "wiredTiger"
 mongodb::repo::repo_location: 'https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.2/x86_64/'
 mongodb::globals::manage_package_repo: true
