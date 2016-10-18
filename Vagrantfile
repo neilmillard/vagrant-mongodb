@@ -1,6 +1,15 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+def is_plugin(name)
+  if Vagrant.has_plugin?(name)
+    puts "using #{name}"
+  else
+    puts "please run vagrant plugin install #{name}"
+    exit(1)
+  end
+end
+
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
 # backwards compatibility). Please don't change it unless you know what
@@ -9,6 +18,13 @@ Vagrant.configure("2") do |config|
   # The most common configuration options are documented and commented below.
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
+
+  # Lets get some dns running
+  is_plugin("landrush")
+  config.landrush.enabled = true
+  config.landrush.tld = 'mongodb.internal'
+  # if your network restricts access to google dns 8.8.8.8 you'll need to define a DNS server
+  config.landrush.upstream '10.10.3.30'
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
