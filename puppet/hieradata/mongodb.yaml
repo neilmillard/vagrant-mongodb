@@ -12,8 +12,8 @@ mongodb::globals::manage_package_repo: true
 
 mongodb::domain: "mongodb.internal"
 
-mongodb::server::replset: "mongodb"
-mongodb::server::replset_members:
+profile::mongodb_replset::mongodb_replset_name: "mongodb"
+profile::mongodb_replset::members:
   - "x1.%{hiera('mongodb::domain')}:27017":
   - "x2.%{hiera('mongodb::domain')}:27017":
   - "x3.%{hiera('mongodb::domain')}:27017":

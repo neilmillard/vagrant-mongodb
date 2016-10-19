@@ -23,16 +23,6 @@ class role::mongodb {
     command => "/usr/bin/mkdir -p ${datapath}",
   }
 
-  # is definded in puppetlabs-mongodb/manifests/server/config.pp:202
-  # file {"${datapath}":
-  #   ensure => directory,
-  #   mode   => '0755',
-  #   owner => "${datauser}",
-  #   group => "${datagrp}",
-  #   require => [Package['mongodb_server'],Exec['create_datafolder']],
-  #   before => Service['mongodb']
-  # }
-
   include ::profile::mongodb1
   #include ::profile::mongodb_repl_set_wt
   #include ::profile::mongodb_wt_backup
