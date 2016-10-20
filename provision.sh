@@ -86,6 +86,10 @@ parse_args() {
         set_facter init_repobranch "${2}"
         shift
         ;;
+      --nodeid|-i)
+        set_facter msmid_cluster_member_id "${2}"
+        shift
+        ;;
       --debug)
         export DEBUG=" --debug"
         shift

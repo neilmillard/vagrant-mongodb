@@ -140,14 +140,17 @@ Vagrant.configure("2") do |config|
 
   config.vm.define "PRI1" do |manager1|
     manager1.vm.hostname = "x1.mongodb.internal"
+    args << " --nodeid 1"
   end
 
   config.vm.define "sec1" do |worker1|
     worker1.vm.hostname = "x2.mongodb.internal"
+    args << " --nodeid 2"
   end
 
   config.vm.define "sec2" do |worker2|
     worker2.vm.hostname = "x3.mongodb.internal"
+    args << " --nodeid 3"
   end
 
   config.vm.provision :shell, :path => 'provision.sh', :args => args

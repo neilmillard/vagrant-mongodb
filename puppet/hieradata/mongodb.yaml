@@ -15,7 +15,7 @@ mongodb::repo::repo_location: 'https://repo.mongodb.org/yum/redhat/$releasever/m
 mongodb::globals::manage_package_repo: true
 
 profile::mongodb_replset::base_domain: "mongodb.internal"
-profile::mongodb_replset::domain: "x%{::msmid_cluster_member_id}.%{hiera('profile::mongodb_replset::base_domain')}"
+profile::mongodb_replset::domain: "%{hiera('profile::mongodb_replset::base_domain')}"
 profile::mongodb_replset::mongodb_replset_name: "mongodb"
 profile::mongodb_replset::members:
   - "x1.%{hiera('profile::mongodb_replset::base_domain')}:27017":
