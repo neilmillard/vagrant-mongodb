@@ -1,7 +1,9 @@
 # the mongodb replica set for the 'role service-pool1-mongodb-wt'
+# uses the ::msmid_cluster_member_id fact
+
 class profile::mongodb_repl_set_wt3 {
 
-    $repl_domain          = hiera('profile::mongodb_replset::domain')
+    $repl_domain          = hiera('profile::mongodb_replset::domain') # should NOT contain cluster_member_id e.g x1.
     $mongodb_replset_name = hiera('profile::mongodb_replset::mongodb_replset_name')
     $replset_members      = hiera('profile::mongodb_replset::members')
     $num_instances        = hiera('profile::mongodb_replset::num_instances', '2')
@@ -18,10 +20,11 @@ class profile::mongodb_repl_set_wt3 {
 
 
   include ::mongodb::globals
+  include ::mongodb::server
   include ::mongodb::client
 
   file {'/etc/facter/facts.d/init_fhn.txt':
-    content => "init_fhn=${repl_domain}",
+    content => "init_fhn=x${::msmid_cluster_member_id}.${repl_domain}",
     owner   => 'sensu',
     group   => 'sensu',
     mode    => '0644',
@@ -33,6 +36,7 @@ class profile::mongodb_repl_set_wt3 {
   Class['mongodb::server']
   ->
   Class['mongodb::client']
+  # handled by the wt3 script \|/
   # ->
   # mongodb_replset{"${mongodb_replset_name}":
   #   members => "${replset_members}"

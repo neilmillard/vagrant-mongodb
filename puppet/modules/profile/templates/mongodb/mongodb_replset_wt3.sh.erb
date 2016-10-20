@@ -5,7 +5,14 @@
 #      "PEM_PASS=${tls_chl_pass}",
 #      "SSL_MODE=${ssl_mode}",
 #      "USE_DB_AUTH=${db_auth}",
-#      "NUM_INSTANCES=${num_instances}"
+#      "NUM_INSTANCES=${num_instances}",
+#      "DEBUG=yes"
+
+# Turn on verbose logging and capture to log file
+if [[ -n ${DEBUG} ]]; then
+  set -x
+  exec 2>/tmp/mongodb_replset_wt3.log
+fi
 
 LOG='/tmp/mongo_replset.log'
 #reset log
@@ -13,7 +20,7 @@ echo "" > ${LOG}
 
 MYIP='<%= @ipaddress_eth0 %>'
 XNAME=$( facter init_fhn )
-# REPL_DOMAIN is same as hostname and XNAME
+# REPL_DOMAIN is same as XNAME without the first node bit
 REPL_DOMAIN="<%= @repl_domain %>"
 HOSTLIST=''
 REPLSET='<%= @mongodb_replset_name %>'
