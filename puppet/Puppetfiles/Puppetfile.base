@@ -10,3 +10,6 @@ mod "puppetlabs/stdlib", "4.6.0"
 mod "maestrodev/wget", "1.5.6"
 mod "erwbgy/limits", "0.3.1"
 mod "spiette/selinux", "0.5.4"
+#mod "MSMFG/skydns_client",
+#  :git => "git@github.com:MSMFG/puppet-skydns-client.git",
+#  :ref => "0.1.2"

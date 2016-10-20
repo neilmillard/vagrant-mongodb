@@ -1,32 +1,35 @@
 ---
 classes:
   - role::mongodb
-#mongodb::server::dbpath: '/mnt/mongodb'
-#mongodb::server::logpath: '/mnt/mongodb/mongod.log'
+
 mongodb::globals::version: "3.2.10-1.el7"
 mongodb::server::createpidfile: false
 mongodb::server::storage_engine: "wiredTiger"
+mongodb::server::dbpath: "/var/lib/mongo"
+# cant use syslog and logpath
+#mongodb::server::syslog: true
+#mongodb::server::logpath: '/mnt/mongodb/mongod.log'
+mongodb::server::directoryperdb: true
+
 mongodb::repo::repo_location: 'https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.2/x86_64/'
 mongodb::globals::manage_package_repo: true
 
-
-mongodb::domain: "mongodb.internal"
-
+profile::mongodb_replset::base_domain: "mongodb.internal"
+profile::mongodb_replset::domain: "x%{::msmid_cluster_member_id}.%{hiera('profile::mongodb_replset::base_domain')}"
 profile::mongodb_replset::mongodb_replset_name: "mongodb"
 profile::mongodb_replset::members:
-  - "x1.%{hiera('mongodb::domain')}:27017":
-  - "x2.%{hiera('mongodb::domain')}:27017":
-  - "x3.%{hiera('mongodb::domain')}:27017":
+  - "x1.%{hiera('profile::mongodb_replset::base_domain')}:27017":
+  - "x2.%{hiera('profile::mongodb_replset::base_domain')}:27017":
+  - "x3.%{hiera('profile::mongodb_replset::base_domain')}:27017":
     priority: 0
     hidden: 'true'
     votes: 2
 
-# cant use syslog and logpath
-#mongodb::server::syslog: true
-mongodb::server::dbpath: "/var/lib/mongo"
-mongodb::server::directoryperdb: true
-#mongodb::server::logpath: ""
 mongodb::client::package_name: "mongodb-org-shell"
+
+profile::skydns_client::entries:
+  "%{hiera('profile::mongodb_replset::domain')}":
+      host: "%{::ipaddress_eth0}"
 
 limits:
   '*':
