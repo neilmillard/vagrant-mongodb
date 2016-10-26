@@ -43,7 +43,16 @@ class profile::mongodb_repl_set_wt3 {
   # }
 
 
-  package {'nc':
+  # nc is nmap-ncat on redhat 6
+  $nc_package  = $::osfamily ? {
+    'RedHat' => $::operatingsystemrelease ? {
+      /^7\./        => 'nmap-ncat',
+      default       => 'nc',
+    },
+    default         => 'nc',
+  }
+
+  package {"${nc_package}":
       ensure  => installed,
     }
     ->
