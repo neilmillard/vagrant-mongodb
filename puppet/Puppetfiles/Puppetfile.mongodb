@@ -8,8 +8,8 @@ mod "neilmillard/mongodb",
   :git => "https://github.com/neilmillard/puppetlabs-mongodb.git",
   :ref => "master"
 mod "basti1302/wait_for", "0.2.0"
-exclusion 'spiette/selinux'
-mod "jfryman/selinux", "0.5.0"
+exclusion 'spiette-selinux'
+mod "jfryman-selinux", "0.4.0"
 #mod "MSMFG/puppet-java",
 #  :git => "git@github.com:MSMFG/puppet-java.git",
 #  :ref => "0.0.5"

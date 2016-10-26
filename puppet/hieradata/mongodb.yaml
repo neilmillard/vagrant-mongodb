@@ -21,7 +21,7 @@ profile::mongodb_replset::members:
   - "x1.%{hiera('profile::mongodb_replset::base_domain')}:27017"
   - "x2.%{hiera('profile::mongodb_replset::base_domain')}:27017"
   - "x3.%{hiera('profile::mongodb_replset::base_domain')}:27017"
-    
+
 mongodb::client::package_name: "mongodb-org-shell"
 
 profile::skydns_client::entries:
