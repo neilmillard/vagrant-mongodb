@@ -18,13 +18,10 @@ profile::mongodb_replset::base_domain: "mongodb.internal"
 profile::mongodb_replset::domain: "%{hiera('profile::mongodb_replset::base_domain')}"
 profile::mongodb_replset::mongodb_replset_name: "mongodb"
 profile::mongodb_replset::members:
-  - "x1.%{hiera('profile::mongodb_replset::base_domain')}:27017":
-  - "x2.%{hiera('profile::mongodb_replset::base_domain')}:27017":
-  - "x3.%{hiera('profile::mongodb_replset::base_domain')}:27017":
-    priority: 0
-    hidden: 'true'
-    votes: 2
-
+  - "x1.%{hiera('profile::mongodb_replset::base_domain')}:27017"
+  - "x2.%{hiera('profile::mongodb_replset::base_domain')}:27017"
+  - "x3.%{hiera('profile::mongodb_replset::base_domain')}:27017"
+    
 mongodb::client::package_name: "mongodb-org-shell"
 
 profile::skydns_client::entries:
