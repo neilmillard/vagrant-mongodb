@@ -28,7 +28,7 @@ class profile::mongodb_repl_set_wt3 {
     owner   => 'sensu',
     group   => 'sensu',
     mode    => '0644',
-    require => Exec['install_sensu'],
+    #require => Exec['install_sensu'],
   }
 
   Class['mongodb::globals']
@@ -63,7 +63,7 @@ class profile::mongodb_repl_set_wt3 {
     group   => root,
     content => template('profile/mongodb/mongodb_replset_wt3.sh.erb'),
     #require => [ Class['::mountdevice'], Class['profile::skydns_client'], File[$tls_pki_path], File['/etc/facter/facts.d/init_fhn.txt'], Class['mongodb::server'] ],
-    require => [ Class['mongodb::server'] ],
+    require => [ File['/etc/facter/facts.d/init_fhn.txt'], Class['mongodb::server'] ],
   }
   ->
   exec {'ensure_permissions_correct_wt3':
