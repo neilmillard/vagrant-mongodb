@@ -130,7 +130,7 @@ function wait_for_available_mongo {
 	echo "Wait for the $NUM_INSTANCES nodes to be available " 2>&1 | /usr/bin/tee -a ${LOG}
 	while true; do
 		for ii in ${HOSTLIST}; do
-			/usr/bin/nc -w 5 -z ${ii} ${DB_PORT}
+			<%= @scancmd %>
 			if [[ $? -ne 0 ]]; then
 				echo "- mongo server ${ii} is not ready, next check in 5 sec" 2>&1 | /usr/bin/tee -a ${LOG}
 			else
@@ -257,8 +257,8 @@ if [[ ${SSL_MODE} != 'none' ]]; then
 	echo "net.ssl.mode: ${SSL_MODE}" >> /etc/mongod.conf
 	echo "net.ssl.PEMKeyFile: ${PKI_PATH}/${XNAME}.combo.pem" >> /etc/mongod.conf
 	echo "net.ssl.PEMKeyPassword: ${PEM_PASS}" >> /etc/mongod.conf
-	# TODO: need to check CA Alias
-	echo "net.ssl.CAFile: ${PKI_PATH}/MSMCA-ca.crt" >> /etc/mongod.conf
+	# Add in CA Alias
+	echo "net.ssl.CAFile: ${PKI_PATH}/<%= @ejbca %>-ca.crt" >> /etc/mongod.conf
 fi
 
 /sbin/service mongod restart

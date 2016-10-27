@@ -43,14 +43,22 @@ class profile::mongodb_repl_set_wt3 {
   # }
 
 
-  # nc is nmap-ncat on redhat 6
+  # nc is nmap-ncat on redhat 7
+  # nc on redhat 7 is missing the -z option so we use nmap instead
+  # $scancmd is injected into the mongodb_replset3.sh bash script
   $nc_package  = $::osfamily ? {
     'RedHat' => $::operatingsystemrelease ? {
-      /^7\./        => 'nmap-ncat',
+      /^7\./        => 'nmap',
       default       => 'nc',
     },
     default         => 'nc',
   }
+  if $nc_package == 'nc' {
+    $scancmd = '/usr/bin/nc -w 5 -z ${ii} ${DB_PORT}'
+  } else {
+    $scancmd = 'nmap -Pn -p${DB_PORT} ${ii} | awk "\$1 ~ /$PORT/ {print \$2}" | grep open'
+  }
+
 
   package {"${nc_package}":
       ensure  => installed,
