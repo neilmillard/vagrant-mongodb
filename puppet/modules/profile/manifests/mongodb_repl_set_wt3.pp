@@ -56,7 +56,7 @@ class profile::mongodb_repl_set_wt3 {
   if $nc_package == 'nc' {
     $scancmd = '/usr/bin/nc -w 5 -z ${ii} ${DB_PORT}'
   } else {
-    $scancmd = 'nmap -Pn -p${DB_PORT} ${ii} | awk "\$1 ~ /$PORT/ {print \$2}" | grep open'
+    $scancmd = 'nmap -Pn -p${DB_PORT} ${ii} | awk "\$1 ~ /${DB_PORT}/ {print \$2}" | grep open'
   }
 
 
