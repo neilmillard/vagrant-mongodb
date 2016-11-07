@@ -57,7 +57,7 @@ else
 fi
 
 if [[  ${SSL_MODE} == 'requireSSL' ]]; then
-	X509OPT=" --ssl --sslPEMKeyFile ${PKI_PATH}/${XNAME}.combo.pem --sslCAFile ${PKI_PATH}/MSMCA-ca.crt${PEMKey}"
+	X509OPT=" --ssl --sslPEMKeyFile ${PKI_PATH}/${XNAME}.combo.pem --sslCAFile ${PKI_PATH}/<%= @ejbca %>-ca.crt${PEMKey}"
 fi
 
 if [[ -z ${SSL_MODE} ]]; then
