@@ -3,7 +3,7 @@ classes:
   - role::mongodb
 
 mongodb::globals::version: "3.2.10-1.el7"
-mongodb::server::createpidfile: false
+mongodb::server::manage_pidfile: false
 mongodb::server::storage_engine: "wiredTiger"
 mongodb::server::dbpath: "/var/lib/mongo"
 # cant use syslog and logpath
