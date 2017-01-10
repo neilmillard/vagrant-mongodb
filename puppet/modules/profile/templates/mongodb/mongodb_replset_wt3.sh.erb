@@ -1,0 +1,326 @@
+#!/usr/bin/env bash
+# Mongo replication setup. You can pass extra variables to this script as ENV.
+# e.g.
+#      "PKI_PATH=${tls_pki_path}",
+#      "PEM_PASS=${tls_chl_pass}",
+#      "SSL_MODE=${ssl_mode}",
+#      "USE_DB_AUTH=${db_auth}",
+#      "NUM_INSTANCES=${num_instances}",
+#      "DEBUG=yes"
+
+# Turn on verbose logging and capture to log file
+if [[ -n ${DEBUG} ]]; then
+  set -x
+  exec 2>/tmp/mongodb_replset_wt3.log
+fi
+
+LOG='/tmp/mongo_replset.log'
+#reset log
+echo "" > ${LOG}
+
+MYIP='<%= @ipaddress_eth0 %>'
+XNAME=$( facter init_fhn )
+# REPL_DOMAIN is same as XNAME without the first node bit
+REPL_DOMAIN="<%= @repl_domain %>"
+HOSTLIST=''
+REPLSET='<%= @mongodb_replset_name %>'
+RSMASTER=''
+RSCONFIG=''
+DB_PORT='27017'
+ROOT_US='root'
+ROOT_PW=''
+# Authentication Database
+CDB='admin'
+DB_AUTH=''
+X509OPT=''
+RS_AUTH=''
+WT_STORAGE=true
+
+if [[ -z ${XNAME} ]]; then
+	echo "ERROR :: XNAME isn't set."
+	exit 1
+else
+	/bin/hostname ${XNAME}
+	echo ${XNAME} > /etc/hostname
+fi
+
+if [[ -z ${PKI_PATH} ]]; then
+	echo "WARN: PKI_PATH doesn't set, use default /etc/pki/msm/mongodb" 2>&1 | /usr/bin/tee -a ${LOG}
+	PKI_PATH=/etc/pki/msm/mongodb
+fi
+
+if [[ -z ${PEM_PASS} ]]; then
+	echo "WARN: PEMKeyPassword will not set" 2>&1 | /usr/bin/tee -a ${LOG}
+	PEMKey=''
+else
+	PEMKey=" --sslPEMKeyPassword ${PEM_PASS}"
+fi
+
+if [[  ${SSL_MODE} == 'requireSSL' ]]; then
+	X509OPT=" --ssl --sslPEMKeyFile ${PKI_PATH}/${XNAME}.combo.pem --sslCAFile ${PKI_PATH}/<%= @ejbca %>-ca.crt${PEMKey}"
+fi
+
+if [[ -z ${SSL_MODE} ]]; then
+	SSL_MODE='preferSSL'
+fi
+
+if [[ -z ${USE_DB_AUTH} ]]; then
+	USE_DB_AUTH=false
+else
+	echo "mongodb use db auth: ${USE_DB_AUTH}" 2>&1 | /usr/bin/tee -a ${LOG}
+fi
+
+# set minimum number of instances required to start cluster
+if [[ -z ${NUM_INSTANCES} ]]; then
+	NUM_INSTANCES=2
+fi
+
+echo "REPLICATION DOMAIN > $REPL_DOMAIN" 2>&1 | /usr/bin/tee -a ${LOG}
+echo "mongodb ssl.mode: ${SSL_MODE}" 2>&1 | /usr/bin/tee -a ${LOG}
+
+# check if pem file exists or wait until it will be created
+echo "Check if combo.pem file exists or wait until it will be created" 2>&1 | /usr/bin/tee -a ${LOG}
+_COUNTER=1
+until /bin/ls -la ${PKI_PATH}/${XNAME}.combo.pem &> /dev/null ; do
+	if [ ${_COUNTER} -ge 128 ]; then
+		echo "ERROR! CHECK PEM FILE - count of attempts is reached" 2>&1 | /usr/bin/tee -a ${LOG}
+		exit 1
+	else
+		echo -n '.' 2>&1 | /usr/bin/tee -a ${LOG}
+		((_COUNTER++))
+		sleep 5
+	fi
+done
+
+# get the subject from pem
+output=$( /usr/bin/openssl x509 -in ${PKI_PATH}/${XNAME}.combo.pem -inform PEM -subject -nameopt RFC2253 )
+if [[ ${output} =~ ^subject=.(.*?),CN= ]]; then
+	KEY_SUBJ=${BASH_REMATCH[1]}
+fi
+
+
+TLS_NAME="${KEY_SUBJ},CN=${XNAME}"
+echo "x509: my name ${TLS_NAME}" 2>&1 | /usr/bin/tee -a ${LOG}
+
+
+#Wait for the majority of nodes to be registered in SKYDNS
+function wait_for_sky_names {
+	local COUNTER=1
+	local res=0
+	echo "Wait for the $NUM_INSTANCES nodes to be registered in SKYDNS" 2>&1 | /usr/bin/tee -a ${LOG}
+	while true; do
+		echo -n '.' 2>&1 | /usr/bin/tee -a ${LOG}
+		res=$(/usr/bin/dig +noall ${REPL_DOMAIN} SRV +additional | wc -l)
+		if [[ ${res} -lt ${NUM_INSTANCES} ]]; then
+			if [ ${COUNTER} -ge 256 ]; then
+			echo "ERROR! count of attempts is reached" 2>&1 | /usr/bin/tee -a ${LOG}
+			exit 1
+			fi
+			((COUNTER++))
+			sleep 5
+			else
+		break
+		fi
+	done
+}
+
+#Wait for the $NUM_INSTANCES nodes to be available
+function wait_for_available_mongo {
+	local COUNT=0
+	echo "Wait for the $NUM_INSTANCES nodes to be available " 2>&1 | /usr/bin/tee -a ${LOG}
+	while true; do
+		for ii in ${HOSTLIST}; do
+			<%= @scancmd %>
+			if [[ $? -ne 0 ]]; then
+				echo "- mongo server ${ii} is not ready, next check in 5 sec" 2>&1 | /usr/bin/tee -a ${LOG}
+			else
+				echo "+ mongo server ${ii} is ready, checking next from the list" 2>&1 | /usr/bin/tee -a ${LOG}
+				((COUNT++))
+			fi
+		done
+		if [[ ${COUNT} -ge ${NUM_INSTANCES} ]]; then
+			echo "There are ${NUM_INSTANCES} available nodes to initiate cluster" 2>&1 | /usr/bin/tee -a ${LOG}
+			break
+		else
+			COUNT=0
+			sleep 5
+		fi
+	done
+}
+
+# get the master name from the list of instances
+function get_master {
+  local master=''
+	for ii in ${HOSTLIST}; do
+		echo "Checking host is a master: $ii" 2>&1 | /usr/bin/tee -a ${LOG}
+		/usr/bin/mongo ${ii}:${DB_PORT}/${CDB} --quiet ${X509OPT} --eval "printjson(db.isMaster().ismaster)" | grep -q true
+		if [[ $? -ne 0 ]]; then
+			 sleep $[ ( $RANDOM % 5 )  + 1 ]s
+			 continue
+		else
+			 echo "Mongo master detected :: ${ii}" 2>&1 | /usr/bin/tee -a ${LOG}
+			 master=${ii}
+			 break
+		fi
+	done
+	RSMASTER=${master}
+}
+
+# wait for mongo cluster DNS names are available
+wait_for_sky_names
+
+# read an available instances from the dig command and store them in HOSTLIST
+output=$( dig +noall ${REPL_DOMAIN} SRV +additional )
+
+while read -r line; do
+	if [[ ${line} =~ ^n1.x[1-9]+.${REPL_DOMAIN}..[0-9]+.IN.A ]]; then
+		 _ip=$(echo ${line} | awk '{print $5}')
+		 _name=$(echo ${line} | awk '{print $1}' | sed -r 's/\.$//' | sed -r 's/^n[0-9]+\.//')
+		 HOSTLIST="${HOSTLIST} ${_name}"
+		 if [[ ${line} =~ ${MYIP}$ ]]; then
+			echo "My hostname is: ${_name} :: IP :: ${_ip}" 2>&1 | /usr/bin/tee -a ${LOG}
+		 fi
+	fi
+done <<< "$output"
+
+# check mongodb server if it run
+/sbin/service mongod status
+if [[ $? -ne 0 ]]; then
+	echo "mongod is not running - trying to check and start it" 2>&1 | /usr/bin/tee -a ${LOG}
+	# check if old database admin/local format still exists
+	if [[ -f /lts/data/local.ns ]] && [[ ${WT_STORAGE} == true ]]; then
+		 echo "ERROR :: incompatible with wiredTiger data detected - exiting..." 2>&1 | /usr/bin/tee -a ${LOG}
+		 exit 1
+	fi
+fi
+
+echo "drop local database to forget all previous replication settings" 2>&1 | /usr/bin/tee -a ${LOG}
+
+## If local security database exists, then attempting to turn it off is useless
+#
+# turn off auth before adding users
+/bin/sed -i -r -e 's/^security.authorization: ?enabled/security.authorization: disabled/' /etc/mongod.conf
+
+/sbin/service mongod restart
+
+/usr/bin/mongo localhost/local --quiet --eval "printjson(db.dropDatabase())" 2>&1 | /usr/bin/tee -a ${LOG}
+
+echo "Add a cluster members: " 2>&1 | /usr/bin/tee -a ${LOG}
+
+# TODO: should we create an ADMIN user first..
+# add replica members
+for ii in ${HOSTLIST}; do
+	_tls_name="${KEY_SUBJ},CN=${ii}"
+	echo "Adding member -> ${_tls_name} " 2>&1 | /usr/bin/tee -a ${LOG}
+	fu=$( echo -n $( /usr/bin/mongo localhost/${CDB} --quiet --eval "printjson(db.system.users.find({user: \"${_tls_name}\"}).count())" |  awk 'END{print}' ) )
+	if [[ ${fu} -eq 1 ]]; then
+		echo "User ${_tls_name} already exists. Updating replica member user -> ${_tls_name} " 2>&1 | /usr/bin/tee -a ${LOG}
+		/usr/bin/mongo localhost/${CDB} --quiet --eval "printjson(db.getSiblingDB(\"\$external\").runCommand({ updateUser: \"${_tls_name}\", roles: [{ role: 'userAdminAnyDatabase', db: 'admin' }], writeConcern: { w: 'majority' , wtimeout: 5000 }}))"  2>&1 | /usr/bin/tee -a ${LOG}
+	else
+		/usr/bin/mongo localhost/${CDB} --quiet --eval "printjson(db.getSiblingDB(\"\$external\").runCommand({ createUser: \"${_tls_name}\", roles: [{ role: 'userAdminAnyDatabase', db: 'admin' }], writeConcern: { w: 'majority' , wtimeout: 5000 }}))"  2>&1 | /usr/bin/tee -a ${LOG}
+	fi
+done
+
+# add service users
+echo "Check and add services users: " 2>&1 | /usr/bin/tee -a ${LOG}
+UHASH=$( /usr/bin/hiera -c /etc/puppet/hiera.yaml profile::mongodb::svcusers ::init_env=$(facter init_env) ::init_role=$(facter init_role) ::msmid_userbase=$(facter msmid_userbase) ::msmid_account=$(facter msmid_account) ::msmid_servicegroup=$(facter msmid_servicegroup) ::msmid_env=$(facter msmid_env) )
+lrexp='"username"=>"(.*?)",\s"roles"=>\s?"(.*?)'
+
+while read line
+	do
+		if [[ ${line} =~ ${lrexp} ]]; then
+			_us="${BASH_REMATCH[1]}"
+			_tls_name="${KEY_SUBJ},CN=${_us}"
+			echo "Adding service user -> ${_tls_name} " 2>&1 | /usr/bin/tee -a ${LOG}
+			fu=$( echo -n $( /usr/bin/mongo localhost/${CDB} --quiet --eval "printjson(db.system.users.find({user: \"${_tls_name}\"}).count())" |  awk 'END{print}' ) )
+			if [[ ${fu} -eq 1 ]]; then
+				echo "User ${_tls_name} already exists. Updating service user -> ${_tls_name} " 2>&1 | /usr/bin/tee -a ${LOG}
+				/usr/bin/mongo localhost/${CDB} --quiet --eval "printjson(db.getSiblingDB(\"\$external\").runCommand({ updateUser: \"${_tls_name}\", roles: [ ${BASH_REMATCH[2]//\'/\"} ], writeConcern: { w: 'majority' , wtimeout: 5000 }}))" 2>&1 | /usr/bin/tee -a ${LOG}
+			else
+				/usr/bin/mongo localhost/${CDB} --quiet --eval "printjson(db.getSiblingDB(\"\$external\").runCommand({ createUser: \"${_tls_name}\", roles: [ ${BASH_REMATCH[2]//\'/\"} ], writeConcern: { w: 'majority' , wtimeout: 5000 }}))" 2>&1 | /usr/bin/tee -a ${LOG}
+			fi
+		fi
+done <<EOT
+$( echo ${UHASH} | perl -lne 'print $1 while /{(.*?)"},?/sg' )
+EOT
+
+# turn on replica
+echo "replication.replSetName: ${REPLSET}" >> /etc/mongod.conf
+
+if [[ ${USE_DB_AUTH} == true ]]; then
+# turn on auth
+	echo "security.clusterAuthMode: x509" >> /etc/mongod.conf
+fi
+
+if [[ ${SSL_MODE} != 'none' ]]; then
+# turn on ssl
+	echo "net.ssl.mode: ${SSL_MODE}" >> /etc/mongod.conf
+	echo "net.ssl.PEMKeyFile: ${PKI_PATH}/${XNAME}.combo.pem" >> /etc/mongod.conf
+	echo "net.ssl.PEMKeyPassword: ${PEM_PASS}" >> /etc/mongod.conf
+	# Add in CA Alias
+	echo "net.ssl.CAFile: ${PKI_PATH}/<%= @ejbca %>-ca.crt" >> /etc/mongod.conf
+fi
+
+/sbin/service mongod restart
+
+# wait until $NUM_INSTANCES mongodb instances are ready
+wait_for_available_mongo
+
+# get the master name
+if [[ ${XNAME} =~ ^x1 ]]; then
+	get_master
+else
+	while [[ -z ${RSMASTER} ]]; do
+		get_master
+		sleep $[ ( $RANDOM % 15 )  + 1 ]s
+	done
+fi
+
+if [[ ${USE_DB_AUTH} == true ]]; then
+	RS_AUTH="db.getSiblingDB(\"\$external\").auth({mechanism: \"MONGODB-X509\",user: \"${KEY_SUBJ},CN=${XNAME}\"});"
+fi
+# master doesn't set - start rs.initiate
+if [[ -z ${RSMASTER} ]]; then
+	echo "No master detected, starting rs.initiate on ${XNAME}" 2>&1 | /usr/bin/tee -a ${LOG}
+	RSCONFIG="{ _id : \"${REPLSET}\", version : 1, members : [ { _id : 0, host : \"${XNAME}:${DB_PORT}\" } ] }"
+	# check if we have fresh replica
+	STATUS=$(/usr/bin/mongo ${XNAME}/${CDB} --quiet ${X509OPT} --eval "${RS_AUTH}printjson(rs.status())" | grep -c "run rs.initiate(...) if not yet done for the set")
+	if [[ ${STATUS} == 1 ]]; then
+		/usr/bin/mongo ${XNAME}:${DB_PORT}/${CDB} --quiet ${X509OPT} --eval "${RS_AUTH}printjson(rs.initiate($RSCONFIG))" 2>&1 | /usr/bin/tee -a ${LOG}
+	else
+		/usr/bin/mongo ${XNAME}:${DB_PORT}/${CDB} --quiet ${X509OPT} --eval "${RS_AUTH}printjson(rs.reconfig($RSCONFIG, { force: true }))" 2>&1 | /usr/bin/tee -a ${LOG}
+	fi
+	echo "Waiting for 30 seconds for Master Configuration" 2>&1 | /usr/bin/tee -a ${LOG}
+	sleep 30
+	/usr/bin/mongo ${XNAME}:${DB_PORT}/${CDB} --quiet ${X509OPT} --eval "${RS_AUTH}printjson(rs.status())" 2>&1 | /usr/bin/tee -a ${LOG}
+else
+# master already set, join the instance to the replica
+	echo "Joining to the replica_set: ${REPLSET}" 2>&1 | /usr/bin/tee -a ${LOG}
+	RSCONFIG=$( /usr/bin/mongo ${RSMASTER}:${DB_PORT}/${CDB} --quiet ${X509OPT} --eval "${RS_AUTH}printjson(rs.conf())" )
+	echo ${RSCONFIG} | grep -q ${XNAME}
+	if [[ $? -ne 0 ]]; then
+		while true; do
+      result=$( /usr/bin/mongo ${RSMASTER}:${DB_PORT}/${CDB} --quiet ${X509OPT} --eval "${RS_AUTH}printjson(rs.status())" )
+      res=$( echo ${result} | perl -lne "print \$1 if /name.\s+:\s+.n?[1-9]?.?${RSMASTER}:\d+.,\s+.health.\s+:\s+\d+,\s+.state.\s+:\s+\d+,\s+.stateStr.\s+\:\s+.(\w+)./" )
+      if [[ ${res} == "PRIMARY" ]]; then
+         echo "Adding ${XNAME} to replica set..." 2>&1 | /usr/bin/tee -a ${LOG}
+         while true; do
+           /usr/bin/mongo ${RSMASTER}:${DB_PORT}/${CDB} --quiet ${X509OPT} --eval "${RS_AUTH}printjson(rs.add( \"${XNAME}:${DB_PORT}\" ))" | grep '"ok" : 1'
+           if [[ $? -ne 0 ]]; then
+             echo "Replica set in progress, waiting 15 sec..." 2>&1 | /usr/bin/tee -a ${LOG}
+             sleep 15
+           else
+             break
+           fi
+         done
+         /usr/bin/mongo ${RSMASTER}:${DB_PORT}/${CDB} --quiet ${X509OPT} --eval "${RS_AUTH}printjson(rs.status())" 2>&1 | /usr/bin/tee -a ${LOG}
+         break
+      else
+         echo "Master is not ready, next check in 15 sec" 2>&1 | /usr/bin/tee -a ${LOG}
+         sleep 15
+      fi
+		done
+	else
+		 echo "Already in replica set..." 2>&1 | /usr/bin/tee -a ${LOG}
+	fi
+fi

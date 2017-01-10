@@ -1,0 +1,21 @@
+
+# role specific
+#mod "puppetlabs/mongodb", "0.14.0"
+#mod "MSMFG/mongodb",
+#  :git => "https://github.com/neilmillard-msm/puppetlabs-mongodb.git",
+#  :ref => "official-0.14.0"
+mod "neilmillard/mongodb",
+  :git => "https://github.com/neilmillard/puppetlabs-mongodb.git",
+  :ref => "master"
+mod "basti1302/wait_for", "0.2.0"
+exclusion 'spiette-selinux'
+mod 'puppet-selinux', '0.5.0'
+#mod "MSMFG/puppet-java",
+#  :git => "git@github.com:MSMFG/puppet-java.git",
+#  :ref => "0.0.5"
+#mod "MSMFG/ifetoolbelt",
+#  :git => "git@github.com:MSMFG/puppet-ife-toolbelt.git",
+#  :ref => "1.7.1"
+#mod "MSMFG/mountdevice",
+#  :git => "git@github.com:MSMFG/puppet-mountdevice.git",
+#  :ref => "1.0.14"

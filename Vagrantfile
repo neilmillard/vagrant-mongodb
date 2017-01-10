@@ -1,6 +1,15 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+def is_plugin(name)
+  if Vagrant.has_plugin?(name)
+    puts "using #{name}"
+  else
+    puts "please run vagrant plugin install #{name}"
+    exit(1)
+  end
+end
+
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
 # backwards compatibility). Please don't change it unless you know what
@@ -9,6 +18,13 @@ Vagrant.configure("2") do |config|
   # The most common configuration options are documented and commented below.
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
+
+  # Lets get some dns running
+  is_plugin("landrush")
+  config.landrush.enabled = true
+  config.landrush.tld = 'mongodb.internal'
+  # if your network restricts access to google dns 8.8.8.8 you'll need to define a DNS server
+  config.landrush.upstream '10.10.3.30'
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
@@ -29,6 +45,7 @@ Vagrant.configure("2") do |config|
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
   # config.vm.network "private_network", ip: "192.168.33.10"
+  config.vm.network "private_network", type: "dhcp"
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -76,17 +93,65 @@ Vagrant.configure("2") do |config|
 #   apt-get install -y apache2
 # SHELL
 
+  # Required Environment Variables
+  if ENV['init_role']
+    $init_role = ENV['init_role']
+  else
+    puts "Environment variable: 'init_role' is not set, defaulting to 'mongodb'"
+    $init_role = 'mongodb'
+  end
+
+  if ENV['init_env']
+    $init_env = ENV['init_env']
+  else
+    puts "Environment variable: 'init_env' is not set, defaulting to 'dev'"
+    $init_env = 'dev'
+  end
+
+  # Optional Environment Variables
+  if ENV['init_repouser']
+    $init_repouser = ENV['init_repouser']
+  else
+    puts "Environment variable: 'init_repouser' is not set, defaulting to 'neilmillard'"
+    $init_repouser = 'neilmillard'
+  end
+
+  if ENV['init_reponame']
+    $init_reponame = ENV['init_reponame']
+  else
+    puts "Environment variable: 'init_reponame' is not set, defaulting to 'vagrant-mongodb'"
+    $init_reponame = 'vagrant-mongodb'
+  end
+
+  if ENV['init_repobranch']
+    $init_repobranch = ENV['init_repobranch']
+  else
+    puts "Environment variable: 'init_repobranch' is not set, defaulting to 'master'"
+    $init_repobranch = 'master'
+  end
+
+  if ENV['init_debug']
+    $init_debug = ' --debug'
+  else
+    $init_debug = ''
+  end
+
+  args = "--role #{$init_role} --environment #{$init_env} --repouser #{$init_repouser} --reponame #{$init_reponame} --repobranch #{$init_repobranch} #{$init_debug}"
+
   config.vm.define "PRI1" do |manager1|
-    manager1.vm.hostname = "PRI1"
+    manager1.vm.hostname = "x1.mongodb.internal"
+    args << " --nodeid 1"
   end
 
   config.vm.define "sec1" do |worker1|
-    worker1.vm.hostname = "sec1"
+    worker1.vm.hostname = "x2.mongodb.internal"
+    args << " --nodeid 2"
   end
 
   config.vm.define "sec2" do |worker2|
-    worker2.vm.hostname = "sec2"
+    worker2.vm.hostname = "x3.mongodb.internal"
+    args << " --nodeid 3"
   end
 
-  config.vm.provision :shell, :path => 'mongodb.sh'
+  config.vm.provision :shell, :path => 'provision.sh', :args => args
 end
